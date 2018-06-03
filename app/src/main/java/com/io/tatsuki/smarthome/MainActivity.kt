@@ -1,7 +1,10 @@
 package com.io.tatsuki.smarthome
 
 import android.app.Activity
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import com.google.android.things.pio.PeripheralManager
 
 /**
  * Skeleton of an Android Things activity.
@@ -25,7 +28,19 @@ import android.os.Bundle
  */
 class MainActivity : Activity() {
 
+    private val TAG = MainActivity::class.simpleName
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate")
+        Log.d(TAG, "BOARD : " + Build.BOARD)
+        Log.d(TAG, "DEVICE : " + Build.DEVICE)
+        Log.d(TAG, "BRAND : " + Build.BRAND)
+        Log.d(TAG, "PRODUCT : " + Build.PRODUCT)
+
+        val peripheralManager = PeripheralManager.getInstance()
+        Log.d(TAG, "GPIO : " + peripheralManager.gpioList.toString())
+        Log.d(TAG, "PWM : " + peripheralManager.pwmList.toString())
+        Log.d(TAG, "I2C : " + peripheralManager.i2cBusList.toString())
     }
 }
