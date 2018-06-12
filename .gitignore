@@ -9,3 +9,5 @@
 /captures
 .externalNativeBuild
 google-services.json
+SmartHomeKeyStore
+/app/release
