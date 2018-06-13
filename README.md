@@ -19,3 +19,4 @@ Android Studio 3.1
 ### 注意事項
 * AndroidThings は RaspberryPi 3 Model B のみをサポートしています（2018/06現在）。RaspberryPi 3 Model B+ や RaspberryPi 2 Model B などでは動作しない場合があります。
 * ADRSIR　ラズベリー・パイ専用 学習リモコン基板は安定した動作のために 3A 以上の電源接続を推奨しているようですが、RaspberryPi 3 Model B 用の 2.5A の電源で動作確認しました。
+* インストール時に ```USE_PERIPHERAL_IO``` のパーミッションを得る必要があるので ```adb install -g ○○○.apk``` でパーミッションを付与してください。
