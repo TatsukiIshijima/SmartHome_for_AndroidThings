@@ -11,6 +11,13 @@ import com.google.android.things.pio.PeripheralManager
 import com.google.firebase.database.*
 import java.io.IOException
 
+/**
+ * 学習した赤外線をとばす操作を GPIO で制御する
+ * Firebase の値が更新された時に GPIO を ON にするので
+ * Firebase の値と GPIO の ON/OFF が一致しない
+ * （音声やアプリ以外でも機器を操作することがあり、Firebase でオンになっている状態でFirebase の方にオンという値を書き込んでも更新されないため）
+ */
+
 class MainActivity : Activity() {
 
     private val TAG = MainActivity::class.simpleName
@@ -29,10 +36,12 @@ class MainActivity : Activity() {
 
     private var mTVFristFlag = true
     //private var mSpeakerFirstFlag = true
-    private var mLightFlag = true
-    private var mAirConFlag = true
-    private var mHeatFlag = true
-    private var mDehumFlag = true
+    private var mLightOnFirstFlag = true
+    private var mLightOffFirstFlag = true
+    private var mAirConOnFirstFlag = true
+    private var mHeatFirstFlag = true
+    private var mDehumFirstFlag = true
+    private var mAirConOffFirstFlag = true
 
     private var tvGPIO: Gpio? = null
     //private var speakerGPIO: Gpio? = null
@@ -52,11 +61,6 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "onCreate")
-        Log.d(TAG, "BOARD : " + Build.BOARD)
-        Log.d(TAG, "DEVICE : " + Build.DEVICE)
-        Log.d(TAG, "BRAND : " + Build.BRAND)
-        Log.d(TAG, "PRODUCT : " + Build.PRODUCT)
 
         init()
         readData()
@@ -82,8 +86,6 @@ class MainActivity : Activity() {
     private fun init() {
         val peripheralManager = PeripheralManager.getInstance()
         Log.d(TAG, "GPIO : " + peripheralManager.gpioList.toString())
-        Log.d(TAG, "PWM : " + peripheralManager.pwmList.toString())
-        Log.d(TAG, "I2C : " + peripheralManager.i2cBusList.toString())
 
         try {
             // 使用するGPIOの指定
@@ -121,93 +123,123 @@ class MainActivity : Activity() {
             }
 
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                Log.d(TAG, "TV value : " + dataSnapshot.value)
                 // アプリ起動時にも呼ばれるため初回のみ何もしないようにする
                 if (mTVFristFlag) {
                     mTVFristFlag = false
                 } else {
-                    // 基本は赤外線を送信するだけなので使用後はDBの値に限らずGPIOをfalseに戻す
                     sendInfrared(tvGPIO)
                 }
             }
         })
 
         // ライト
-        mLightDatabaseRef.addValueEventListener(object : ValueEventListener {
+        mLightDatabaseRef.child("オン").addValueEventListener(object : ValueEventListener {
             override fun onCancelled(databaseError: DatabaseError) {
                 Log.e(TAG, "error", databaseError.toException())
             }
 
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                Log.d(TAG, "Light value : " + dataSnapshot.value)
-                if (mLightFlag) {
-                    mLightFlag = false
+                if (mLightOnFirstFlag) {
+                    mLightOnFirstFlag = false
                 } else {
-                    if (dataSnapshot.value?.equals("オン")!!) {
-                        sendInfrared(lightOnGPIO)
-                    } else {
-                        sendInfrared(lightOffGPIO)
-                    }
+                    sendInfrared(lightOnGPIO)
+                }
+            }
+        })
+        mLightDatabaseRef.child("オフ").addValueEventListener(object : ValueEventListener {
+            override fun onCancelled(databaseError: DatabaseError) {
+                Log.e(TAG, "error", databaseError.toException())
+            }
+
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                if (mLightOffFirstFlag) {
+                    mLightOffFirstFlag = false
+                } else {
+                    sendInfrared(lightOffGPIO)
                 }
             }
         })
 
         // 冷房
-        mAirconDatabaseRef.addValueEventListener(object : ValueEventListener {
+        mAirconDatabaseRef.child("オン").addValueEventListener(object : ValueEventListener {
             override fun onCancelled(databaseError: DatabaseError) {
                 Log.e(TAG, "error", databaseError.toException())
             }
 
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                Log.d(TAG, "Aircon value : " + dataSnapshot.value)
-                if (mAirConFlag) {
-                    mAirConFlag = false
+                if (mAirConOnFirstFlag) {
+                    mAirConOnFirstFlag = false
                 } else {
-                    if (dataSnapshot.value?.equals("オン")!!) {
-                        sendInfrared(airconOnGPIO)
-                    } else {
-                        sendInfrared(airconOffGPIO)
-                    }
+                    sendInfrared(airconOnGPIO)
+                }
+            }
+        })
+        mAirconDatabaseRef.child("オフ").addValueEventListener(object : ValueEventListener {
+            override fun onCancelled(databaseError: DatabaseError) {
+                Log.e(TAG, "error", databaseError.toException())
+            }
+
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                if (mAirConOffFirstFlag) {
+                    mAirConOffFirstFlag = false
+                } else {
+                    sendInfrared(airconOffGPIO)
                 }
             }
         })
 
         // 暖房
-        mHeatDatabaseRef.addValueEventListener(object : ValueEventListener {
+        mHeatDatabaseRef.child("オン").addValueEventListener(object : ValueEventListener {
             override fun onCancelled(databaseError: DatabaseError) {
                 Log.e(TAG, "error", databaseError.toException())
             }
 
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                Log.d(TAG, "Heat value : " + dataSnapshot.value)
-                if (mHeatFlag) {
-                    mHeatFlag = false
+                if (mHeatFirstFlag) {
+                    mHeatFirstFlag = false
                 } else {
-                    if (dataSnapshot.value?.equals("オン")!!) {
-                        sendInfrared(heatGPIO)
-                    } else {
-                        sendInfrared(airconOffGPIO)
-                    }
+                    sendInfrared(heatGPIO)
+                }
+            }
+        })
+        mHeatDatabaseRef.child("オフ").addValueEventListener(object : ValueEventListener {
+            override fun onCancelled(databaseError: DatabaseError) {
+                Log.e(TAG, "error", databaseError.toException())
+            }
+
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                if (mAirConOffFirstFlag) {
+                    mAirConOffFirstFlag = false
+                } else {
+                    sendInfrared(airconOffGPIO)
                 }
             }
         })
 
         // 除湿
-        mDehumDatabaseRef.addValueEventListener(object : ValueEventListener {
+        mDehumDatabaseRef.child("オン").addValueEventListener(object : ValueEventListener {
             override fun onCancelled(databaseError: DatabaseError) {
                 Log.e(TAG, "error", databaseError.toException())
             }
 
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                Log.d(TAG, "Dehum value : " + dataSnapshot.value)
-                if (mDehumFlag) {
-                    mDehumFlag = false
+                if (mDehumFirstFlag) {
+                    mDehumFirstFlag = false
                 } else {
-                    if (dataSnapshot.value?.equals("オン")!!) {
-                        sendInfrared(dehumGPIO)
-                    } else {
-                        sendInfrared(airconOffGPIO)
-                    }
+                    sendInfrared(dehumGPIO)
+                }
+            }
+        })
+        mDehumDatabaseRef.child("オフ").addValueEventListener(object : ValueEventListener {
+            override fun onCancelled(databaseError: DatabaseError) {
+                Log.e(TAG, "error", databaseError.toException())
+            }
+
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                if (mAirConOffFirstFlag) {
+                    mAirConOffFirstFlag = false
+                } else {
+                    sendInfrared(airconOffGPIO)
                 }
             }
         })
@@ -215,6 +247,7 @@ class MainActivity : Activity() {
 
     /**
      * 赤外線を送信
+     * 基本は赤外線を送信するだけなので使用後はDBの値に限らずGPIOをfalseに戻す
      */
     private fun sendInfrared(gpio: Gpio?) {
         gpio?.value = true
