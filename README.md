@@ -11,7 +11,7 @@
 AndroidThings 1.0
 
 ### 開発環境
-Android Studio 3.1
+[![Android Studio](https://img.shields.io/badge/AndroidStudio-3.1.3-blue.svg)](https://developer.android.com/studio/)
 
 ### ライブラリ
 * [Firebase Realtime Database for Android](https://firebase.google.com/docs/database/android/start/?authuser=0)
